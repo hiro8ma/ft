@@ -1,0 +1,11 @@
+[project]
+name = "ft"
+version = "0.1.0"
+description = "Fine-tuning LLMs on Apple Silicon with MLX"
+readme = "README.md"
+authors = [{ name = "hiro8ma" }]
+requires-python = ">=3.13"
+dependencies = [
+    "mlx-lm>=0.22.0",
+    "python-dotenv>=1.2.1",
+]
