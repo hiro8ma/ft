@@ -1,4 +1,5 @@
 adapters/
+adapters-*/
 data/
 __pycache__/
 .cache/
