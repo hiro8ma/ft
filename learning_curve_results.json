@@ -1,0 +1,23 @@
+[
+  {
+    "train_loss": 2.045,
+    "val_loss": 2.09,
+    "output": "0:03,  1.61it/s]\nCalculating loss...:  80%|████████  | 20/25 [00:11<00:02,  1.79it/s]\nCalculating loss...:  84%|████████▍ | 21/25 [00:12<00:02,  1.86it/s]\nCalculating loss...:  88%|████████▊ | 22/25 [00:12<00:01,  1.78it/s]\nCalculating loss...:  92%|█████████▏| 23/25 [00:13<00:01,  1.79it/s]\nCalculating loss...:  96%|█████████▌| 24/25 [00:13<00:00,  1.95it/s]\nCalculating loss...: 100%|██████████| 25/25 [00:14<00:00,  1.91it/s]\nCalculating loss...: 100%|██████████| 25/25 [00:14<00:00,  1.76it/s]\n",
+    "ratio": 0.25,
+    "samples": 68
+  },
+  {
+    "train_loss": 2.278,
+    "val_loss": 2.097,
+    "output": "0:04,  1.27it/s]\nCalculating loss...:  80%|████████  | 20/25 [00:14<00:03,  1.42it/s]\nCalculating loss...:  84%|████████▍ | 21/25 [00:14<00:02,  1.47it/s]\nCalculating loss...:  88%|████████▊ | 22/25 [00:15<00:02,  1.39it/s]\nCalculating loss...:  92%|█████████▏| 23/25 [00:16<00:01,  1.38it/s]\nCalculating loss...:  96%|█████████▌| 24/25 [00:16<00:00,  1.50it/s]\nCalculating loss...: 100%|██████████| 25/25 [00:17<00:00,  1.48it/s]\nCalculating loss...: 100%|██████████| 25/25 [00:17<00:00,  1.43it/s]\n",
+    "ratio": 0.5,
+    "samples": 136
+  },
+  {
+    "train_loss": null,
+    "val_loss": null,
+    "output": "culating loss...: 100%|██████████| 25/25 [00:15<00:00,  1.61it/s]\nlibc++abi: terminating due to uncaught exception of type std::runtime_error: [METAL] Command buffer execution failed: Internal Error (0000000e:Internal Error)\n/opt/homebrew/Cellar/python@3.13/3.13.11/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/resource_tracker.py:400: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/mp-l95z24yj'}\n  warnings.warn(\n",
+    "ratio": 1.0,
+    "samples": 273
+  }
+]
