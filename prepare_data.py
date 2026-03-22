@@ -122,6 +122,39 @@ def create_qa_pairs(filepath: Path, system_prompt: str, label: str) -> list[dict
     return pairs
 
 
+def filter_and_deduplicate(pairs: list[dict]) -> list[dict]:
+    """データ品質フィルタリングと重複排除。"""
+    original_count = len(pairs)
+
+    # 1. 短すぎる回答を除外（100文字未満）
+    pairs = [p for p in pairs if len(p["messages"][2]["content"]) >= 100]
+    after_short = len(pairs)
+    print(f"  短い回答除外: {original_count - after_short}件削除")
+
+    # 2. 質問の重複排除（完全一致）
+    seen_questions = set()
+    unique_pairs = []
+    for p in pairs:
+        q = p["messages"][1]["content"]
+        if q not in seen_questions:
+            seen_questions.add(q)
+            unique_pairs.append(p)
+    pairs = unique_pairs
+    after_dedup = len(pairs)
+    print(f"  重複質問除外: {after_short - after_dedup}件削除")
+
+    # 3. 長すぎる回答を切り詰め（2000文字以上）
+    trimmed = 0
+    for p in pairs:
+        content = p["messages"][2]["content"]
+        if len(content) > 2000:
+            p["messages"][2]["content"] = content[:2000]
+            trimmed += 1
+    print(f"  長い回答切り詰め: {trimmed}件")
+
+    return pairs
+
+
 def main():
     all_pairs = []
 
@@ -149,11 +182,16 @@ def main():
 
         print(f"[{label}] 小計: {source_count} ペア")
 
-    print(f"\n合計 Q&A ペア数: {len(all_pairs)}")
+    print(f"\n合計 Q&A ペア数（フィルタ前）: {len(all_pairs)}")
 
     if not all_pairs:
         print("Error: Q&A ペアが生成されませんでした")
         return
+
+    # データ品質フィルタリング
+    all_pairs = filter_and_deduplicate(all_pairs)
+
+    print(f"合計 Q&A ペア数（フィルタ後）: {len(all_pairs)}")
 
     # シャッフル & 分割 (80/10/10)
     random.seed(42)
