@@ -1,5 +1,9 @@
 """
-knowledge/ ディレクトリのナレッジファイルからFT用データセットを生成する。
+複数のナレッジソースからFT用データセットを生成する。
+
+データソース:
+- ai/knowledge/ — AIエンジニアリング書籍ナレッジ
+- management/docs/ — マネジメント知識ベース
 
 出力形式: JSONL（mlx_lm.lora が期待する chat format）
 - train.jsonl (80%)
@@ -12,14 +16,28 @@ import os
 import random
 from pathlib import Path
 
-KNOWLEDGE_DIR = Path(__file__).parent.parent / "ai" / "knowledge"
+BASE_DIR = Path(__file__).parent.parent
 OUTPUT_DIR = Path(__file__).parent / "data"
+
+# データソース定義（ディレクトリ, システムプロンプト, ラベル）
+DATA_SOURCES = [
+    {
+        "dir": BASE_DIR / "ai" / "knowledge",
+        "system_prompt": "あなたはAIエンジニアリングの専門家です。技術的に正確で、実務に即した回答をしてください。",
+        "label": "ai-engineering",
+    },
+    {
+        "dir": BASE_DIR / "management" / "docs",
+        "system_prompt": "あなたはエンジニアリングマネジメントの専門家です。チーム運営、評価、組織設計について、実務に即した回答をしてください。",
+        "label": "management",
+    },
+]
 
 # ナレッジファイルから Q&A ペアを生成するためのテンプレート
 QUESTION_TEMPLATES = [
     "{title}について説明してください。",
     "{title}の重要なポイントは何ですか？",
-    "{title}を面接で聞かれたらどう答えますか？",
+    "{title}を聞かれたらどう答えますか？",
     "{title}の実務への適用方法を教えてください。",
 ]
 
@@ -71,7 +89,7 @@ def extract_sections(content: str) -> list[dict]:
     return sections
 
 
-def create_qa_pairs(filepath: Path) -> list[dict]:
+def create_qa_pairs(filepath: Path, system_prompt: str, label: str) -> list[dict]:
     """ナレッジファイルから Q&A ペアを生成する。"""
     content = filepath.read_text(encoding="utf-8")
     frontmatter = extract_frontmatter(content)
@@ -85,25 +103,6 @@ def create_qa_pairs(filepath: Path) -> list[dict]:
         title = section["title"]
         body = section["body"]
 
-        # 面接で語れるポイントセクションは特別扱い
-        if "面接" in title:
-            pairs.append(
-                {
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "あなたはAIエンジニアリングの専門家です。面接で聞かれた質問に対して、実務経験に基づいた具体的な回答をしてください。",
-                        },
-                        {
-                            "role": "user",
-                            "content": f"{file_title}について、面接でどう語りますか？",
-                        },
-                        {"role": "assistant", "content": body},
-                    ]
-                }
-            )
-            continue
-
         # 通常のセクション
         for template in random.sample(
             QUESTION_TEMPLATES, min(2, len(QUESTION_TEMPLATES))
@@ -113,10 +112,7 @@ def create_qa_pairs(filepath: Path) -> list[dict]:
             pairs.append(
                 {
                     "messages": [
-                        {
-                            "role": "system",
-                            "content": "あなたはAIエンジニアリングの専門家です。技術的に正確で、実務に即した回答をしてください。",
-                        },
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": question},
                         {"role": "assistant", "content": f"{context}{body}"},
                     ]
@@ -129,21 +125,29 @@ def create_qa_pairs(filepath: Path) -> list[dict]:
 def main():
     all_pairs = []
 
-    # knowledge/ 配下の全 .md ファイルを処理
-    if not KNOWLEDGE_DIR.exists():
-        print(f"Error: {KNOWLEDGE_DIR} が見つかりません")
-        return
+    for source in DATA_SOURCES:
+        source_dir = source["dir"]
+        system_prompt = source["system_prompt"]
+        label = source["label"]
 
-    md_files = list(KNOWLEDGE_DIR.rglob("*.md"))
-    print(f"ナレッジファイル数: {len(md_files)}")
-
-    for filepath in md_files:
-        if filepath.name == "README.md":
+        if not source_dir.exists():
+            print(f"Warning: {source_dir} が見つかりません。スキップします。")
             continue
-        pairs = create_qa_pairs(filepath)
-        if pairs:
-            print(f"  {filepath.relative_to(KNOWLEDGE_DIR)}: {len(pairs)} ペア")
-        all_pairs.extend(pairs)
+
+        md_files = list(source_dir.rglob("*.md"))
+        print(f"\n[{label}] ナレッジファイル数: {len(md_files)}")
+
+        source_count = 0
+        for filepath in md_files:
+            if filepath.name == "README.md":
+                continue
+            pairs = create_qa_pairs(filepath, system_prompt, label)
+            if pairs:
+                print(f"  {filepath.relative_to(source_dir)}: {len(pairs)} ペア")
+                source_count += len(pairs)
+            all_pairs.extend(pairs)
+
+        print(f"[{label}] 小計: {source_count} ペア")
 
     print(f"\n合計 Q&A ペア数: {len(all_pairs)}")
 
@@ -155,27 +159,68 @@ def main():
     random.seed(42)
     random.shuffle(all_pairs)
 
-    n = len(all_pairs)
+    write_splits(all_pairs, OUTPUT_DIR / "combined")
+
+
+def prepare_per_source():
+    """データソースごとに個別のデータセットを生成する（モデルマージ用）。"""
+    for source in DATA_SOURCES:
+        source_dir = source["dir"]
+        system_prompt = source["system_prompt"]
+        label = source["label"]
+        # ラベルからディレクトリ名を生成
+        dir_name = label.lower().replace(" ", "-")
+
+        if not source_dir.exists():
+            print(f"Warning: {source_dir} が見つかりません。スキップします。")
+            continue
+
+        pairs = []
+        md_files = list(source_dir.rglob("*.md"))
+        print(f"\n[{label}] ナレッジファイル数: {len(md_files)}")
+
+        for filepath in md_files:
+            if filepath.name == "README.md":
+                continue
+            file_pairs = create_qa_pairs(filepath, system_prompt, label)
+            if file_pairs:
+                print(f"  {filepath.relative_to(source_dir)}: {len(file_pairs)} ペア")
+            pairs.extend(file_pairs)
+
+        print(f"[{label}] 合計: {len(pairs)} ペア")
+
+        random.seed(42)
+        random.shuffle(pairs)
+        write_splits(pairs, OUTPUT_DIR / dir_name)
+
+
+def write_splits(pairs: list[dict], output_dir: Path):
+    """データをtrain/valid/testに分割して書き出す。"""
+    n = len(pairs)
     train_end = int(n * 0.8)
     valid_end = int(n * 0.9)
 
     splits = {
-        "train.jsonl": all_pairs[:train_end],
-        "valid.jsonl": all_pairs[train_end:valid_end],
-        "test.jsonl": all_pairs[valid_end:],
+        "train.jsonl": pairs[:train_end],
+        "valid.jsonl": pairs[train_end:valid_end],
+        "test.jsonl": pairs[valid_end:],
     }
 
-    # 出力
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     for filename, data in splits.items():
-        filepath = OUTPUT_DIR / filename
+        filepath = output_dir / filename
         with open(filepath, "w", encoding="utf-8") as f:
             for item in data:
                 f.write(json.dumps(item, ensure_ascii=False) + "\n")
-        print(f"  {filename}: {len(data)} サンプル")
+        print(f"  {output_dir.name}/{filename}: {len(data)} サンプル")
 
-    print("\nデータ準備完了!")
+    print(f"データ準備完了! → {output_dir}")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--per-source":
+        prepare_per_source()
+    else:
+        main()
