@@ -31,7 +31,7 @@ def run_inference(model, tokenizer, question: str) -> str:
     prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
-    return generate(model, tokenizer, prompt=prompt, max_tokens=256, temp=0.0)
+    return generate(model, tokenizer, prompt=prompt, max_tokens=256)
 
 
 def main():

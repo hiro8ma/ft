@@ -35,7 +35,8 @@ def main():
             tokenizer,
             prompt=prompt,
             max_tokens=512,
-            temp=0.7,
+
+
         )
         print(f"\n{response}")
 
