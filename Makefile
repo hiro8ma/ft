@@ -1,4 +1,4 @@
-.PHONY: help setup prepare train chat test clean
+.PHONY: help setup prepare train train-dora chat test clean
 
 # === 設定 ===
 MODEL ?= mlx-community/gemma-3-4b-it-4bit
@@ -29,6 +29,20 @@ train: ## LoRA ファインチューニングを実行
 		--learning-rate $(LEARNING_RATE) \
 		--epochs $(EPOCHS) \
 		--adapter-path $(ADAPTER_DIR)
+
+train-dora: ## DoRA ファインチューニングを実行（LoRA比較用）
+	uv run mlx_lm.lora \
+		--model $(MODEL) \
+		--train \
+		--data $(DATA_DIR) \
+		--fine-tune-type dora \
+		--batch-size $(BATCH_SIZE) \
+		--num-layers 4 \
+		--learning-rate $(LEARNING_RATE) \
+		--iters 100 \
+		--max-seq-length 256 \
+		--adapter-path adapters-dora \
+		--grad-checkpoint
 
 chat: ## FT済みモデルで対話テスト
 	uv run python chat.py
