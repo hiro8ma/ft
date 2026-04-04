@@ -1,4 +1,4 @@
-.PHONY: help setup prepare train train-dora chat test clean
+.PHONY: help setup prepare train train-dora chat chat-qwen3 test clean
 
 # === 設定 ===
 MODEL ?= mlx-community/gemma-3-4b-it-4bit
@@ -46,6 +46,9 @@ train-dora: ## DoRA ファインチューニングを実行（LoRA比較用）
 
 chat: ## FT済みモデルで対話テスト
 	uv run python chat.py
+
+chat-qwen3: ## Qwen3-0.6B で対話テスト（Reasoning対応）
+	uv run python chat_qwen3.py
 
 test: ## ベースモデル vs FTモデルの比較テスト
 	uv run python eval.py
