@@ -1,6 +1,13 @@
 # Fine-tuning Experiments
 
-## リポジトリの目的
+## Prohibited Actions
+
+- センシティブな内容（社名・個人情報・本業の詳細）は書かない（Public リポ）
+- 学習データに個人情報を含めない
+- 生の API キー・シークレットをソースコードにハードコードしない
+- ローカルパス（`/Users/...`）を含むファイルはリモートにプッシュしない
+
+## Role
 
 Apple Silicon ローカルで LLM の Fine-tuning を実験するリポジトリ。
 MLX + LoRA で小規模モデルの SFT を行い、AIエンジニアリングの実装力を証明する。
@@ -36,6 +43,13 @@ make train         # LoRA FT 実行
 make eval          # 評価
 make merge         # アダプタマージ
 ```
+
+## Guidelines
+
+- 新しいモデルを追加する場合は `chat_{model_name}.py` の命名規則に従う
+- 新しいコマンドを追加する場合は `Makefile` にターゲットを追加する
+- 学習データは `data/` 配下に JSONL 形式で配置する
+- 学習済みアダプタは `adapters/` 配下に配置する
 
 ## 今後の拡張候補
 
