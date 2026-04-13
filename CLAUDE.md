@@ -31,6 +31,7 @@ learning_curve.py    # 学習曲線分析
 merge_adapters.py    # LoRA アダプタのマージ
 data/                # 学習データ（JSONL）
 adapters/            # 学習済み LoRA アダプタ
+docs/                # 技術ナレッジ（Transformer内部構造、推論最適化等）
 ```
 
 ## 開発コマンド
