@@ -1,6 +1,7 @@
 adapters/
 adapters-*/
 data/
+data_dpo/
 __pycache__/
 .cache/
 .env

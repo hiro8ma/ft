@@ -54,6 +54,6 @@ make merge         # アダプタマージ
 
 ## 今後の拡張候補
 
-- DPO（Direct Preference Optimization）の実装
+- DPO レシピ追加済（`mlx-lm-lora` 使用。`docs/dpo-mlx.md` / `recipes/dpo/`）。実機での学習実行は未
 - Qwen3-0.6B の LoRA FT
 - Gemma 3 4B vs Qwen3-0.6B の比較実験

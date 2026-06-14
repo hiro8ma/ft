@@ -1,4 +1,4 @@
-.PHONY: help setup prepare train train-dora chat chat-qwen3 test clean
+.PHONY: help setup prepare prepare-dpo train train-dora train-dpo chat chat-qwen3 test clean
 
 # === 設定 ===
 MODEL ?= mlx-community/gemma-3-4b-it-4bit
@@ -9,6 +9,12 @@ BATCH_SIZE ?= 1
 LORA_RANK ?= 8
 LEARNING_RATE ?= 1e-5
 
+# === DPO 設定 ===
+DPO_DATA_DIR = data_dpo
+DPO_ADAPTER_DIR = adapters-dpo
+DPO_BETA ?= 0.1
+DPO_ITERS ?= 100
+
 help: ## ヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
@@ -17,6 +23,9 @@ setup: ## 依存関係をインストール
 
 prepare: ## knowledge/ からトレーニングデータを生成
 	uv run python prepare_data.py
+
+prepare-dpo: ## 選好データ（chosen/rejected）を train/valid に分割
+	uv run python recipes/dpo/prepare_dpo.py
 
 train: ## LoRA ファインチューニングを実行
 	uv run mlx_lm.lora \
@@ -42,6 +51,22 @@ train-dora: ## DoRA ファインチューニングを実行（LoRA比較用）
 		--iters 100 \
 		--max-seq-length 256 \
 		--adapter-path adapters-dora \
+		--grad-checkpoint
+
+train-dpo: ## DPO（選好最適化）を実行（要 mlx-lm-lora。make prepare-dpo 後）
+	uv run mlx_lm_lora.train \
+		--model $(MODEL) \
+		--train \
+		--train-mode dpo \
+		--train-type lora \
+		--data $(DPO_DATA_DIR) \
+		--beta $(DPO_BETA) \
+		--batch-size $(BATCH_SIZE) \
+		--num-layers 8 \
+		--learning-rate $(LEARNING_RATE) \
+		--iters $(DPO_ITERS) \
+		--max-seq-length 512 \
+		--adapter-path $(DPO_ADAPTER_DIR) \
 		--grad-checkpoint
 
 chat: ## FT済みモデルで対話テスト

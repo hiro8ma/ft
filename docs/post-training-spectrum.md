@@ -32,7 +32,7 @@
 | 対象 HW | NVIDIA CUDA GPU | Apple Silicon（M 系） |
 | 依存 | Triton カーネル → **Mac では動かない** | Apple 純正 MLX、CUDA toolkit 不要 |
 | 速度 | 最速（RTX 3090 は M2 Max の 2-4 倍） | 遅いが統合メモリで大 model ロード可・静音 |
-| 対応手法 | SFT/LoRA/QLoRA + 最新 RL（GRPO/DPO） | LoRA/QLoRA 中心、最新 RL は手薄 |
+| 対応手法 | SFT/LoRA/QLoRA + 最新 RL（GRPO/DPO） | LoRA/QLoRA 中心。DPO/ORPO/GRPO は拡張 `mlx-lm-lora` で対応（`docs/dpo-mlx.md`） |
 | 立ち位置 | 本番・大規模学習 | **ローカル実験・プライバシー・CUDA 構築回避** |
 
 このリポは MLX + LoRA で Apple Silicon ローカル学習 = 「Mac = 実験/プライバシー、本番スケールや最新 RL は CUDA(Unsloth)」という 2026 の役割分担の**前者側**。橋渡しに `mlx-tune` / `unsloth-mlx`（Unsloth 互換 API）があり、Mac で書いた `FastLanguageModel` スクリプトを CUDA クラスタへ移せる。
