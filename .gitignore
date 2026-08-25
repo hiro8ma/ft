@@ -8,3 +8,11 @@ __pycache__/
 *.pyc
 .venv/
 **/settings.local.json
+
+# 鍵・証明書（golang-security の secrets ルール）
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
