@@ -7,5 +7,6 @@ authors = [{ name = "hiro8ma" }]
 requires-python = ">=3.13"
 dependencies = [
     "mlx-lm>=0.22.0",
+    "mlx-lm-lora>=3.1.2",
     "python-dotenv>=1.2.1",
 ]

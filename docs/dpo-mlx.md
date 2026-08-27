@@ -63,11 +63,53 @@ uv run mlx_lm_lora.train \
   --grad-checkpoint
 ```
 
-### 検証状況
+### 検証状況（2026-08-27 実機で実行）
 
-- 確認済（公式 README）: `--train` / `--train-mode dpo` / `--train-type lora`（`lora`/`dora`/`full`）/ `--data` / `--beta` / `--model`。
-- 要検証（mlx_lm.lora の慣習から流用。実機で `mlx_lm_lora.train --help` を確認すること）: `--num-layers` / `--iters` / `--max-seq-length` / `--grad-checkpoint` / `--batch-size` / `--learning-rate` の正確な引数名と既定値。
-- 未実行: モデル DL と GPU 学習は本作業では回していない（ダウンロード/メモリが要るため）。`make prepare-dpo` のデータ生成のみ実行・確認済。
+Apple Silicon で実際に回した。ドキュメント作成時は未実行だったが、依存を入れて通した。
+
+```
+mlx-lm-lora 3.1.2 を uv add
+DPO_ITERS=10 make train-dpo
+
+Trainable parameters: 0.077% (3.506M / 4551.516M)
+Iter  1  Val loss 0.693  accuracy 0.000  margin 0.000
+Iter 10  Val loss 0.001  accuracy 1.000  margin 6.772
+peak_mem 6.272GB / 10 iter を約 10 秒
+```
+
+Val loss の初期値 0.693 は `ln(2)` にあたる。DPO の損失は
+「chosen と rejected のどちらが好ましいか」の二値分類なので、
+学習前は五分五分になる。理論値がそのまま出ている。
+
+ただし選好データが 6 件しかないため、accuracy 1.000 は過学習を見ているだけになる。
+確認できたのはパイプラインが通ることだけで、学習が成立したわけではない。
+
+実行して分かった注意点が 2 つある。
+
+**scale の既定値が mlx-lm と違う**
+
+```
+mlx-lm       scale 20.0   （SFT で使用）
+mlx-lm-lora  scale 10.0   （DPO で使用）
+```
+
+Makefile は `scale` を渡していないため、SFT と DPO で LoRA の強さが 2 倍違う。
+DPO は beta で参照モデルからの乖離を制御するので、scale と二重に効く。
+揃えるなら `--lora-parameters` で明示する。
+
+**学習後にフルモデルが自動で書き出される**
+
+`mlx-lm-lora` は学習後にアダプタをベースへマージ（fuse）する。
+しかも 4bit 量子化を解いた形で出すため、元モデルより大きくなる。
+
+```
+adapters.safetensors        13MB   ← アダプタ本体
+model-00001-of-00002.safetensors  5.0GB
+model-00002-of-00002.safetensors  3.5GB
+```
+
+`.gitignore` の `adapters-*/` で塞がっているが、
+ディスクは消費する。アダプタだけ残すなら学習後に手で削る。
 
 ## LoRA / DPO ハイパラの目安
 
